@@ -1,0 +1,47 @@
+name: build nodejs
+
+on:
+  push:
+    branches: [ "404" ]
+  pull_request:
+    branches: [ "404" ]
+
+jobs:
+  push:
+    name: "nodejs:${{ matrix.tag }}"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        tag:
+          - 12
+          - 14
+          - 16
+          - 17
+          - 18
+          - 19
+          - 20
+          - latest
+    steps:
+      - uses: actions/checkout@v3
+      # Setup QEMU for ARM64 Build
+      - uses: docker/setup-qemu-action@v2
+      - uses: docker/setup-buildx-action@v2
+        with:
+          buildkitd-flags: --debug
+      - uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./${{ matrix.tag }}/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ghcr.io/fandev404/nodejs:${{ matrix.tag }}
